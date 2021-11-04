@@ -158,7 +158,23 @@ int SavedServiceModel::indexOf(const QString &dbusObjectPath) const
 
 void SavedServiceModel::updateServiceList()
 {
-    QVector<NetworkService *> new_services = m_manager->getSavedServices(m_techname);
+    QVector<NetworkService *> new_services;
+
+    /*
+     * With ethernet also include available services as they are created by
+     * ConnMan when tehnology is enabled and connected but are not yet saved.
+     */
+    if (m_techname == "ethernet") {
+        QVector<NetworkService *> saved = m_manager->getSavedServices(m_techname);
+        QVector<NetworkService *> available = m_manager->getAvailableServices(m_techname);
+
+        new_services = QVector<NetworkService *>(saved.size() + available.size());
+        std::move(saved.begin(), saved.end(), new_services.begin());
+        std::move(available.begin(), available.end(), new_services.begin() + saved.size());
+    } else {
+        new_services = m_manager->getSavedServices(m_techname);
+    }
+
     if (m_sort) {
         if (m_groupByCategory) {
             std::stable_sort(new_services.begin(), new_services.end(), compareManagedServices);
