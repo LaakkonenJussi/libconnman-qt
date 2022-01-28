@@ -55,6 +55,7 @@ public:
 
     // For now, we are only tracking connecting state for WiFi service
     bool m_connectingWifi;
+    bool m_connectingEthernet;
     bool m_connected;
 
     QStringList m_availableServicesOrder;
@@ -71,6 +72,7 @@ public:
     bool updateWifiConnected(NetworkService *service);
     bool updateEthernetConnected(NetworkService *service);
     bool updateWifiConnecting(NetworkService *service);
+    bool updateEthernetConnecting(NetworkService *service);
     void setServicesAvailable(bool servicesAvailable);
     void setTechnologiesAvailable(bool technologiesAvailable);
 
@@ -95,6 +97,7 @@ public Q_SLOTS:
     void maybeCreateInterfaceProxy();
     void onConnectedChanged();
     void onWifiConnectingChanged();
+    void onEthernetConnectingChanged();
 };
 
 const QString NetworkManager::Private::InputRequestTimeout("InputRequestTimeout");
@@ -220,12 +223,53 @@ bool NetworkManager::Private::updateWifiConnecting(NetworkService *service)
     return false;
 }
 
+bool NetworkManager::Private::updateEthernetConnecting(NetworkService *service)
+{
+    if (service && service->connecting()) {
+        // Definitely connecting
+        if (!m_connectingEthernet) {
+            m_connectingEthernet = true;
+            return true;
+        }
+    } else {
+        // Need to check
+        const QVector<NetworkService*> availableEthernet = manager()->getAvailableServices(EthernetType);
+        for (NetworkService *ethernet: availableEthernet) {
+            if (ethernet->connecting()) {
+                if (m_connectingEthernet) {
+                    // Already connecting
+                    return false;
+                } else {
+                    // Connecting state changed
+                    m_connectingEthernet = true;
+                    return true;
+                }
+            }
+        }
+        // Nothing is connecting
+        if (m_connectingEthernet) {
+            m_connectingEthernet = false;
+            return true;
+        }
+    }
+    return false;
+}
+
 void NetworkManager::Private::onWifiConnectingChanged()
 {
     NetworkService *service = qobject_cast<NetworkService*>(sender());
     if (service && updateWifiConnecting(service)) {
         Q_EMIT manager()->connectingChanged();
         Q_EMIT manager()->connectingWifiChanged();
+    }
+}
+
+void NetworkManager::Private::onEthernetConnectingChanged()
+{
+    NetworkService *service = qobject_cast<NetworkService*>(sender());
+    if (service && updateEthernetConnecting(service)) {
+        Q_EMIT manager()->connectingChanged();
+        Q_EMIT manager()->connectingEthernetChanged();
     }
 }
 
@@ -724,6 +768,8 @@ void NetworkManager::updateServices(const ConnmanObjectList &changed, const QLis
         } else if (type == Private::EthernetType) {
             ethernetServices.add(path);
             m_priv->updateEthernetConnected(service);
+            connect(service, &NetworkService::connectingChanged,
+                    m_priv, &NetworkManager::Private::onEthernetConnectingChanged);
         }
 
         connect(service, &NetworkService::connectedChanged,
@@ -775,6 +821,7 @@ void NetworkManager::updateServices(const ConnmanObjectList &changed, const QLis
     bool wasValid = isValid();
     m_priv->setServicesAvailable(true);
     m_priv->updateWifiConnecting(NULL);
+    m_priv->updateEthernetConnecting(NULL);
 
     // Emit signals
     if (m_priv->m_connectedWifi != prevConnectedWifi) {
@@ -1151,9 +1198,7 @@ QStringList NetworkManager::savedServicesList(const QString &tech)
             return selectServiceList(m_priv->m_cellularServicesOrder, Private::selectSaved);
         }
     } else if (tech == Private::EthernetType) {
-        if (m_priv->m_ethernetServicesOrder.count() < m_savedServicesOrder.count()) {
-            return selectServiceList(m_priv->m_ethernetServicesOrder, Private::selectSaved);
-        }
+        return selectServiceList(m_priv->m_ethernetServicesOrder, Private::selectSaved);
     }
     return selectServiceList(m_savedServicesOrder, tech);
 }
@@ -1170,9 +1215,7 @@ QStringList NetworkManager::availableServices(const QString &tech)
             return selectServiceList(m_priv->m_cellularServicesOrder, Private::selectAvailable);
         }
     } else if (tech == Private::EthernetType) {
-        if (m_priv->m_ethernetServicesOrder.count() < m_priv->m_availableServicesOrder.count()) {
-            return selectServiceList(m_priv->m_ethernetServicesOrder, Private::selectAvailable);
-        }
+        return selectServiceList(m_priv->m_ethernetServicesOrder, Private::selectAvailable);
     }
     return selectServiceList(m_priv->m_availableServicesOrder, tech);
 }
@@ -1403,13 +1446,18 @@ bool NetworkManager::connected() const
 
 bool NetworkManager::connecting() const
 {
-    // For now, we are only tracking connecting state for WiFi service
-    return m_priv->m_connectingWifi;
+    // For now, we are only tracking connecting state for WiFi and eth services
+    return m_priv->m_connectingWifi || m_priv->m_connectingEthernet;
 }
 
 bool NetworkManager::connectingWifi() const
 {
     return m_priv->m_connectingWifi;
+}
+
+bool NetworkManager::connectingEthernet() const
+{
+    return m_priv->m_connectingEthernet;
 }
 
 void NetworkManager::Private::setServicesAvailable(bool servicesAvailable)

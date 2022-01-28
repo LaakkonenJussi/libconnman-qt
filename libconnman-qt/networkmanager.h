@@ -39,6 +39,7 @@ class NetworkManager : public QObject
     Q_PROPERTY(NetworkService* defaultRoute READ defaultRoute NOTIFY defaultRouteChanged)
     Q_PROPERTY(NetworkService* connectedWifi READ connectedWifi NOTIFY connectedWifiChanged)
     Q_PROPERTY(bool connectingWifi READ connectingWifi NOTIFY connectingChanged)
+    Q_PROPERTY(bool connectingEthernet READ connectingEthernet NOTIFY connectingChanged)
 
     Q_PROPERTY(NetworkService* connectedEthernet READ connectedEthernet NOTIFY connectedEthernetChanged)
 
@@ -91,6 +92,7 @@ public:
     NetworkService* defaultRoute() const;
     NetworkService* connectedWifi() const;
     bool connectingWifi() const;
+    bool connectingEthernet() const;
 
     NetworkService *connectedEthernet() const;
 
@@ -166,6 +168,7 @@ Q_SIGNALS:
     void connectedChanged();
     void connectingChanged();
     void connectingWifiChanged();
+    void connectingEthernetChanged();
 
 private:
     typedef bool (*ServiceSelector)(NetworkService*);
