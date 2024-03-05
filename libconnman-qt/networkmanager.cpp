@@ -1346,7 +1346,7 @@ void NetworkManager::propertyChanged(const QString &name, const QVariant &value)
         QString path = value.toString();
 
         /* No change in default route */
-        if (m_defaultRoute && m_defaultRoute->path() == path)
+        if (m_defaultRoute && m_defaultRoute != m_invalidDefaultRoute && m_defaultRoute->path() == path)
             return;
 
         m_servicesCacheHasUpdates = true;
