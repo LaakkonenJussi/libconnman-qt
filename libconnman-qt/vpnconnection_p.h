@@ -60,6 +60,10 @@ public:
     QVariantMap m_properties;
 
     VpnConnection *q_ptr;
+private:
+    void getPropertiesErrorHandler(QDBusError::ErrorType error);
+    void getProperties();
+    int m_retryTimer;
 };
 
 #endif // VPNCONNECTION_P_H
