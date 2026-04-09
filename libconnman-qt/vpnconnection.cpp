@@ -31,6 +31,7 @@
  */
 
 #include "marshalutils.h"
+#include "logging.h"
 
 #include "vpnconnection.h"
 #include "vpnconnection_p.h"
@@ -53,6 +54,8 @@ const QString connmanService = QStringLiteral("net.connman");
 const QString connmanVpnService = QStringLiteral("net.connman.vpn");
 const QString autoConnectKey = QStringLiteral("AutoConnect");
 const QString splitRoutingKey = QStringLiteral("SplitRouting");
+const int getPropertiesRetryTimerDefault = 100; // ms
+const int getPropertiesRetryTimerMax = 1000; // ms
 
 QString vpnServicePath(const QString &connectionPath)
 {
@@ -69,6 +72,7 @@ VpnConnectionPrivate::VpnConnectionPrivate(VpnConnection &qq, const QString &pat
     , m_splitRouting(false)
     , m_state(VpnConnection::Idle)
     , q_ptr(&qq)
+    , m_retryTimer(0)
 {
 }
 
@@ -78,23 +82,7 @@ void VpnConnectionPrivate::init()
 
     m_properties.insert("path", m_path);
 
-    QDBusPendingCall servicePropertiesCall = m_serviceProxy.GetProperties();
-    QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(servicePropertiesCall, q);
-    VpnConnection::connect(watcher, &QDBusPendingCallWatcher::finished, q, [q, this](QDBusPendingCallWatcher *watcher) {
-        QDBusPendingReply<> reply = *watcher;
-        if (reply.isFinished() && reply.isValid()) {
-            QDBusMessage message = reply.reply();
-            QVariantMap properties = MarshalUtils::demarshallArgument<QVariantMap>(message.arguments().value(0));
-            bool autoConnect = properties.value(autoConnectKey).toBool();
-            properties.clear();
-            properties.insert(autoConnectKey, autoConnect);
-            q->update(MarshalUtils::propertiesToQml(properties));
-        } else {
-            qDebug() << "Error :" << m_path << ":" << reply.error().message();
-        }
-
-        watcher->deleteLater();
-    });
+    getProperties();
 
     VpnConnection::connect(&m_connectionProxy, &NetConnmanVpnConnectionInterface::PropertyChanged, q, [q](const QString &name, const QDBusVariant &value) {
         QVariantMap properties;
@@ -110,6 +98,58 @@ void VpnConnectionPrivate::init()
             properties.insert(name, value.variant());
             q->update(MarshalUtils::propertiesToQml(properties));
         }
+    });
+}
+
+void VpnConnectionPrivate::getPropertiesErrorHandler(QDBusError::ErrorType error)
+{
+    Q_Q(VpnConnection);
+
+    switch (error) {
+    case QDBusError::NoError:
+        qCDebug(lcConnman) << "getProperties() success";
+        break;
+    // The service is not fully initialized in D-Bus, retry in this case
+    case QDBusError::UnknownObject:
+        if (!m_retryTimer)
+            m_retryTimer = getPropertiesRetryTimerDefault;
+        else if (m_retryTimer < getPropertiesRetryTimerMax)
+            m_retryTimer += getPropertiesRetryTimerDefault;
+
+        qCDebug(lcConnman) << "getProperties() retry in" << m_retryTimer << "ms";
+
+        QTimer::singleShot(m_retryTimer, q, [this]() {
+            getProperties();
+        });
+        break;
+    default:
+        qCDebug(lcConnman) << "getProperties() error" << error;
+        break;
+    }
+}
+
+void VpnConnectionPrivate::getProperties()
+{
+    Q_Q(VpnConnection);
+
+    QDBusPendingCall servicePropertiesCall = m_serviceProxy.GetProperties();
+    QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(servicePropertiesCall, q);
+    VpnConnection::connect(watcher, &QDBusPendingCallWatcher::finished, q, [q, this](QDBusPendingCallWatcher *watcher) {
+        QDBusPendingReply<> reply = *watcher;
+        if (reply.isFinished() && reply.isValid()) {
+            QDBusMessage message = reply.reply();
+            QVariantMap properties = MarshalUtils::demarshallArgument<QVariantMap>(message.arguments().value(0));
+            bool autoConnect = properties.value(autoConnectKey).toBool();
+            properties.clear();
+            properties.insert(autoConnectKey, autoConnect);
+            q->update(MarshalUtils::propertiesToQml(properties));
+            getPropertiesErrorHandler(QDBusError::NoError);
+        } else {
+            qCDebug(lcConnman) << "Error :" << m_path << " type :" << reply.error().type() << " : " << reply.error().message();
+            getPropertiesErrorHandler(reply.error().type());
+        }
+
+        watcher->deleteLater();
     });
 }
 
