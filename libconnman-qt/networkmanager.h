@@ -34,6 +34,7 @@ class NetworkManager : public QObject
 {
     Q_OBJECT
     Q_ENUMS(State)
+    Q_ENUMS(WifiWpa3Support)
     Q_PROPERTY(bool available READ isAvailable NOTIFY availabilityChanged)
     // deprecated
     Q_PROPERTY(QString state READ state NOTIFY stateChanged)
@@ -45,6 +46,7 @@ class NetworkManager : public QObject
 
     Q_PROPERTY(bool sessionMode READ sessionMode WRITE setSessionMode NOTIFY sessionModeChanged)
     Q_PROPERTY(uint inputRequestTimeout READ inputRequestTimeout NOTIFY inputRequestTimeoutChanged)
+    Q_PROPERTY(WifiWpa3Support wifiWpa3Support READ wifiWpa3Support NOTIFY wifiWpa3SupportChanged)
 
     Q_PROPERTY(bool servicesEnabled READ servicesEnabled WRITE setServicesEnabled NOTIFY servicesEnabledChanged)
     Q_PROPERTY(bool technologiesEnabled READ technologiesEnabled WRITE setTechnologiesEnabled NOTIFY technologiesEnabledChanged)
@@ -68,6 +70,12 @@ public:
         IdleState,
         ReadyState,
         OnlineState
+    };
+
+    enum WifiWpa3Support {
+        Wpa3SupportFull,
+        Wpa3SupportMixed,
+        Wpa3SupportNone
     };
 
     static const QString WifiTechnologyPath;
@@ -114,6 +122,7 @@ public:
     // deprecated
     bool sessionMode() const;
     uint inputRequestTimeout() const;
+    WifiWpa3Support wifiWpa3Support() const;
 
     // deprecated
     bool servicesEnabled() const;
@@ -168,6 +177,7 @@ Q_SIGNALS:
     void globalStateChanged(State state);
     void offlineModeChanged(bool offlineMode);
     void inputRequestTimeoutChanged();
+    void wifiWpa3SupportChanged();
     void technologiesChanged();
     void servicesChanged();
     void savedServicesChanged();

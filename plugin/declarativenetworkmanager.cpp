@@ -40,6 +40,8 @@ DeclarativeNetworkManager::DeclarativeNetworkManager(QObject *parent)
             this, &DeclarativeNetworkManager::offlineModeChanged);
     connect(m_sharedInstance.data(), &NetworkManager::inputRequestTimeoutChanged,
             this, &DeclarativeNetworkManager::inputRequestTimeoutChanged);
+    connect(m_sharedInstance.data(), &NetworkManager::wifiWpa3SupportChanged,
+            this, &DeclarativeNetworkManager::wifiWpa3SupportChanged);
     connect(m_sharedInstance.data(), &NetworkManager::defaultRouteChanged,
             this, &DeclarativeNetworkManager::defaultRouteChanged);
     connect(m_sharedInstance.data(), &NetworkManager::connectedWifiChanged,
@@ -144,6 +146,11 @@ bool DeclarativeNetworkManager::sessionMode() const
 uint DeclarativeNetworkManager::inputRequestTimeout() const
 {
     return m_sharedInstance->inputRequestTimeout();
+}
+
+DeclarativeNetworkManager::WifiWpa3Support DeclarativeNetworkManager::wifiWpa3Support() const
+{
+    return (DeclarativeNetworkManager::WifiWpa3Support)m_sharedInstance->wifiWpa3Support();
 }
 
 bool DeclarativeNetworkManager::servicesEnabled() const

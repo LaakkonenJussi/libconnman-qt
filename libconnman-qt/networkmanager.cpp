@@ -27,6 +27,7 @@ static const QString StateProperty("State");
 static const QString OfflineModeProperty("OfflineMode");
 static const QString DefaultServiceProperty("DefaultService");
 static const QString TetheringClientsProperty("TetheringClients");
+static const QString WiFiWpa3SupportProperty("WiFiWPA3Support");
 
 // ==========================================================================
 // NetworkManagerFactory
@@ -1511,6 +1512,24 @@ void NetworkManager::propertyChanged(const QString &name, const QVariant &value)
 
             updateDefaultRoute();
         }
+    } else if (name == WiFiWpa3SupportProperty) {
+        enum WifiWpa3Support wpa3Support = NetworkManager::Wpa3SupportFull;
+
+        if (m_priv->m_propertiesCache.value(name) == value)
+            return;
+
+        if (value == "full")
+            wpa3Support = NetworkManager::Wpa3SupportFull;
+        else if (value == "mixed")
+            wpa3Support = NetworkManager::Wpa3SupportMixed;
+        else if (value == "none")
+            wpa3Support = NetworkManager::Wpa3SupportNone;
+        else
+            qCDebug(lcConnman) << "Invalid WPA3 Support str" << value;
+
+         m_priv->m_propertiesCache[name] = (uint)wpa3Support;
+
+        Q_EMIT wifiWpa3SupportChanged();
     } else {
         if (m_priv->m_propertiesCache.value(name) == value)
             return;
@@ -1540,6 +1559,11 @@ uint NetworkManager::inputRequestTimeout() const
     bool ok = false;
     uint value = m_priv->m_propertiesCache.value(InputRequestTimeoutProperty).toUInt(&ok);
     return (ok && value) ? value : DefaultInputRequestTimeout;
+}
+
+NetworkManager::WifiWpa3Support NetworkManager::wifiWpa3Support() const
+{
+    return (NetworkManager::WifiWpa3Support)m_priv->m_propertiesCache.value(WiFiWpa3SupportProperty).toUInt();
 }
 
 bool NetworkManager::servicesEnabled() const
