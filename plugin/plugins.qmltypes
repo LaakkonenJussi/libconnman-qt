@@ -125,6 +125,13 @@ Module {
                 "OnlineState": 4
             }
         }
+        Enum {
+            name: "WifiWpa3Support"
+            values: {
+                "Wpa3SupportFull": 0,
+                "Wpa3SupportMixed": 1,
+                "Wpa3SupportNone": 2
+        }
         Property { name: "available"; type: "bool"; isReadonly: true }
         Property { name: "state"; type: "string"; isReadonly: true }
         Property { name: "globalState"; type: "int"; isReadonly: true }

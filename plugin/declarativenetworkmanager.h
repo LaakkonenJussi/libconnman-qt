@@ -31,6 +31,7 @@ class DeclarativeNetworkManager: public QObject
 {
     Q_OBJECT
     Q_ENUMS(State)
+    Q_ENUMS(WifiWpa3Support)
     Q_PROPERTY(bool available READ isAvailable NOTIFY availabilityChanged)
     // deprecated
     Q_PROPERTY(QString state READ state NOTIFY stateChanged)
@@ -43,6 +44,7 @@ class DeclarativeNetworkManager: public QObject
 
     Q_PROPERTY(bool sessionMode READ sessionMode WRITE setSessionModeProperty NOTIFY sessionModeChanged)
     Q_PROPERTY(uint inputRequestTimeout READ inputRequestTimeout NOTIFY inputRequestTimeoutChanged)
+    Q_PROPERTY(WifiWpa3Support wifiWpa3Support READ wifiWpa3Support NOTIFY wifiWpa3SupportChanged)
 
     Q_PROPERTY(bool servicesEnabled READ servicesEnabled WRITE setServicesEnabled NOTIFY servicesEnabledChanged)
     Q_PROPERTY(bool technologiesEnabled READ technologiesEnabled WRITE setTechnologiesEnabled NOTIFY technologiesEnabledChanged)
@@ -69,6 +71,12 @@ public:
         OnlineState = NetworkManager::OnlineState
     };
 
+    enum WifiWpa3Support {
+        Wpa3SupportFull = NetworkManager::Wpa3SupportFull,
+        Wpa3SupportMixed = NetworkManager::Wpa3SupportMixed,
+        Wpa3SupportNone = NetworkManager::Wpa3SupportNone
+    };
+
     DeclarativeNetworkManager(QObject *parent = 0);
     virtual ~DeclarativeNetworkManager();
 
@@ -83,6 +91,7 @@ public:
 
     bool sessionMode() const;
     uint inputRequestTimeout() const;
+    WifiWpa3Support wifiWpa3Support() const;
 
     bool servicesEnabled() const;
     void setServicesEnabled(bool enabled);
@@ -144,6 +153,7 @@ Q_SIGNALS:
     void globalStateChanged();
     void offlineModeChanged();
     void inputRequestTimeoutChanged();
+    void wifiWpa3SupportChanged();
     void defaultRouteChanged();
     void connectedWifiChanged();
     void connectedEthernetChanged();
