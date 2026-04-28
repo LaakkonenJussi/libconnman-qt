@@ -173,6 +173,7 @@ Module {
             name: "serviceCreationFailed"
             Parameter { name: "error"; type: "string" }
         }
+        // sdk-make-qmltypes:keep
         Signal { name: "tetheringClientsChanged" }
         Signal {
             name: "tetheringClientAdded"
@@ -336,7 +337,7 @@ Module {
                 "SecurityPSK": 3,
                 "SecurityIEEE802": 4,
                 "SecurityPSKSAE": 5,
-                "SecyritySAE": 6
+                "SecuritySAE": 6
             }
         }
         Enum {
