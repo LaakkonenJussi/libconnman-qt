@@ -61,6 +61,8 @@ class DeclarativeNetworkManager: public QObject
 
     Q_PROPERTY(QVariantList tetheringClients READ getTetheringClients NOTIFY tetheringClientsChanged)
 
+    Q_PROPERTY(bool wifiWmtDualMode READ wifiWmtDualMode NOTIFY wifiWmtDualModeChanged)
+
 public:
     // needs to match NetworkManager's enum
     enum State {
@@ -110,6 +112,8 @@ public:
     QString ethernetTechnologyPath() const;
 
     QVariantList getTetheringClients() const;
+
+    bool wifiWmtDualMode() const;
 
     Q_INVOKABLE QStringList servicesList(const QString &tech);
     Q_INVOKABLE QStringList savedServicesList(const QString &tech = QString());
@@ -182,6 +186,8 @@ Q_SIGNALS:
     void tetheringClientsChanged();
     void tetheringClientAdded(const QString &macAddress);
     void tetheringClientRemoved(const QString &macAddress);
+
+    void wifiWmtDualModeChanged();
 
 private:
     QSharedPointer<NetworkManager> m_sharedInstance;
